@@ -640,7 +640,7 @@ AdbcStatusCode NetezzaConnection::Commit(struct AdbcError* error) {
 AdbcStatusCode NetezzaConnection::NetezzaConnectionGetInfoImpl(
     const uint32_t* info_codes, size_t info_codes_length, struct ArrowSchema* schema,
     struct ArrowArray* array, struct AdbcError* error) {
-  RAISE_ADBC(AdbcInitConnectionGetInfoSchema(info_codes, info_codes_length, schema, array,
+  RAISE_ADBC(AdbcInitConnectionGetInfoSchema(schema, array,
                                              error));
 
   for (size_t i = 0; i < info_codes_length; i++) {
