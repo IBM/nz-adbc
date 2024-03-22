@@ -1,5 +1,6 @@
 name: Build and Release nz-adbc
-on: pull_request_comment
+on: 
+    issue_comment: 
 jobs:
     ubi-build:
         runs-on: ubi8
