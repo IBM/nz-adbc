@@ -1,16 +1,15 @@
 name: C/C++ CI
-
 on: release
-
 jobs:
   build:
-
-    runs-on: ubi8-minimal:latest
-
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
     - name: install
-      run: yum install -y python39 python39-pip
+      run: |
+        apt install python3.9
+        curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+        python3.9 get-pip.py
     - name: submodule
       run: git submodule update --init --recursive
     - name: make
