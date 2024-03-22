@@ -1,0 +1,10 @@
+name: Build and Release nz-adbc
+on: pull_request_comment
+jobs:
+    ubi-build:
+        runs-on: ubi8
+        steps:
+            - run: |
+                yum install -y python3.9 python39-pip
+                git submodule update --init --recursive
+                make
