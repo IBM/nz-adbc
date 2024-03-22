@@ -5,7 +5,7 @@ on: release
 jobs:
   build:
 
-    runs-on: ubi8
+    runs-on: ubi8-minimal:latest
 
     steps:
     - uses: actions/checkout@v3
