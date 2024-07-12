@@ -11,20 +11,10 @@ jobs:
       run: git submodule update --init --recursive
     - name: make
       run: make
-    - name: release
-      run: |
-        set THIS_GITHUB_EVENT=$(cat $GITHUB_EVENT_PATH)
-        set RELEASE_UPLOAD_URL=$(echo $THIS_GITHUB_EVENT | jq -r .release.upload_url)
-        set RELEASE_UPLOAD_URL=${RELEASE_UPLOAD_URL/\{?name,label\}/}
-        set RELEASE_TAG_NAME=$(echo $THIS_GITHUB_EVENT | jq -r .release.tag_name)
-        set PROJECT_NAME=$(basename $GITHUB_REPOSITORY)
-        NAME="adbc_driver_netezza.tgz"
-        curl \
-          --tlsv1.2 \
-          -X POST \
-          --data-binary WithMakeBuild/adbc_driver_netezza.tgz \
-          -H 'Content-Type: application/octet-stream' \
-          -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-          "${RELEASE_UPLOAD_URL}?name=${NAME}"
+    - name: Upload distributions
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-dists
+        path: WithMakeBuild/
 
     
