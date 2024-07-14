@@ -11,10 +11,7 @@ jobs:
       run: git submodule update --init --recursive
     - name: make
       run: make
-    - name: Upload distributions
-      uses: actions/upload-artifact@v4
-      with:
-        name: release-dists
-        path: WithMakeBuild/
-
+    - name: Upload distributions to relase
+      run: |
+        gh release upload ${{github.event.release.tag_name}} WithMakeBuild/adbc_driver_netezza.tgz 
     
