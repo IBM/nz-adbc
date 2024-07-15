@@ -9,16 +9,12 @@ jobs:
       run: sudo apt-get install -y libkrb5-dev
     - name: submodule
       run: git submodule update --init --recursive
-    - name: make
-      run: make
-
-  publish:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-    - name: Upload distributions to relase
+    - name: make and publish
       run: |
-        gh release upload ${{github.event.release.tag_name}} WithMakeBuild/adbc_driver_netezza.tgz 
+        make
+        gh release upload ${{github.event.release.tag_name}} WithMakeBuild/adbc_driver_netezza.tgz
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  
     
