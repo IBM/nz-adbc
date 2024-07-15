@@ -11,6 +11,11 @@ jobs:
       run: git submodule update --init --recursive
     - name: make
       run: make
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
     - name: Upload distributions to relase
       run: |
         gh release upload ${{github.event.release.tag_name}} WithMakeBuild/adbc_driver_netezza.tgz 
