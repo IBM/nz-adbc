@@ -43,7 +43,8 @@ jobs:
       with:
         name: release-dists
         path: adbc_driver_netezza.tgz
-
+    - name: make dist dir
+      run: mkdir dist && mv adbc_driver_netezza.tgz dist/
     - name: Publish distribution to TestPyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
