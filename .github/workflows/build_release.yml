@@ -42,6 +42,7 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: release-dists
+        path: dist
         
     - name: List Files
       run: ls -R
