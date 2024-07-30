@@ -30,8 +30,8 @@ jobs:
     - build
     runs-on: ubuntu-latest
 
-    environment:
-      name: test-nz-adbc-release
+    # environment:
+      # name: test-nz-adbc-release
       # url: https://pypi.org/p/YOURPROJECT
 
     permissions:
