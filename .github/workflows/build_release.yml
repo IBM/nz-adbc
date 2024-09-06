@@ -24,14 +24,14 @@ jobs:
         name: release-dists
         path: src/python/dist
 
-  publish-to-testpypi:
-    name: Publish Python distribution to TestPyPI
+  publish-to-pypi:
+    name: Publish Python distribution to PyPI
     needs:
     - build
     runs-on: ubuntu-latest
 
-    # environment:
-      # name: test-nz-adbc-release
+    environment:
+      name: nz-adbc-release
       # url: https://pypi.org/p/YOURPROJECT
 
     permissions:
@@ -44,11 +44,11 @@ jobs:
         name: release-dists
         path: dist
         
-    - name: Publish distribution to TestPyPI
+    - name: Publish distribution to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         repository-url: https://test.pypi.org/legacy/
-        verbose: true
+        # verbose: true
     
         
     
