@@ -18,7 +18,10 @@
 [project]
 name = "adbc-driver-netezza"
 description = "A libpq-based ADBC driver for working with Netezza."
-authors = [{name = "nzadbc-developers", email = "abhishekjog@gmail.com ,sagarsoni1510@gmail.com ,ayush.mehrotra900@gmail.com"}]
+authors = [{name = "nzadbc-developer", email = "abhishekjog@gmail.com"},
+           {name = "nzadbc-developer", email = "sagarsoni1510@gmail.com"},
+           {name = "nzadbc-developer", email = "ayush.mehrotra900@gmail.com"}
+           ]
 license = {text = "Apache-2.0"}
 readme = "README.md"
 requires-python = ">=3.9"
