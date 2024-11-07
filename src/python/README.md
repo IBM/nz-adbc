@@ -16,7 +16,6 @@
   specific language governing permissions and limitations
   under the License.
 -->
-Updated Readme
 # ADBC Netezza Driver for Python
 
 This package contains bindings for the [Netezza driver][Netezza], using
