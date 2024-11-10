@@ -47,7 +47,7 @@ jobs:
 
       - name: Upload Python distributions to PyPI
         env:
-          PYPI_USERNAME: ${{ secrets.PYPI_USERNAME }}  # Fetch PyPI username from secrets
-          PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}  # Fetch PyPI password or API token from secrets
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}  # Fetch PyPI username from secrets
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}  # Fetch PyPI password or API token from secrets
         run: |
           twine upload src/python/dist/*  # Upload the pre-built package from the dist directory
