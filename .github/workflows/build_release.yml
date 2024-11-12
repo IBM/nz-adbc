@@ -6,9 +6,12 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo yum install openssl-devel krb5-devel compat-openssl11 -y
 
       - name: Update submodules
         run: git submodule update --init --recursive
@@ -17,9 +20,9 @@ jobs:
         run: |
           make
           gh release upload ${{ github.event.release.tag_name }} WithMakeBuild/adbc_driver_netezza.tgz
-          pip install twine  # Install twine to upload packages
+          pip install twine
           echo "Uploading distributions to PyPI..."
-          twine upload src/python/dist/*  # Upload the distribution files
+          twine upload src/python/dist/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
