@@ -6,33 +6,24 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install prerequisites
-        run: sudo apt-get install -y libkrb5-dev
+      - name: Install dependencies
+        run: sudo yum install openssl-devel krb5-devel compat-openssl11 -y
 
       - name: Update submodules
         run: git submodule update --init --recursive
 
       - name: Build and publish release
         run: |
-          make  # Assuming `make` will generate distribution files in the correct location
+          make
           gh release upload ${{ github.event.release.tag_name }} WithMakeBuild/adbc_driver_netezza.tgz
+          pip install twine
+          echo "Uploading distributions to PyPI..."
+          twine upload src/python/dist/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Verify distribution files location
-        run: |
-          echo "Checking the contents of src/python/dist/"
-          ls -l src/python/dist/  # List the contents of the directory to ensure files are there
-
-      - name: Publish to PyPI
-        env:
-          PYPI_USERNAME: ${{ secrets.PYPI_USERNAME }}  # Fetch PyPI username from secrets
-          PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}  # Fetch PyPI password or API token from secrets
-        run: |
-          pip install twine  # Install twine to upload packages
-          echo "Uploading distributions to PyPI..."
-          twine upload src/python/dist/*  # Upload the distribution files
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
