@@ -52,14 +52,21 @@ CPPFLAGS = -I $(ARRAOW_ADBC_DIR) -I $(ARRAOW_ADBC_DRIVER_DIR) -I $(ARRAOW_ADBC_V
 
 all: create_build_dir copy_netezza_driver_lib create_test_dir run_cmake_adbc build_netezza build_nzpyadbc make_c_tarball
 
+compile_without_tests: create_build_dir copy_netezza_driver_lib run_cmake_adbc_without_tests build_netezza build_nzpyadbc make_c_tarball
+
 create_test_dir:
-	mkdir $(ARRAOW_ADBC_DRIVER_DIR)/netezza
+	mkdir -p $(ARRAOW_ADBC_DRIVER_DIR)/netezza
 	cp -r $(NETEZZA_DRIVER_SOURCE_DIR)/* $(ARRAOW_ADBC_DRIVER_DIR)/netezza/
 
 run_cmake_adbc: create_build_dir
 	@echo "Running cmake adbc"
 	@[ -d $(ARROW_ADBC_BUILD_DIR) ] || mkdir -p $(ARROW_ADBC_BUILD_DIR)
 	cd $(ARROW_ADBC_BUILD_DIR) && cmake ../c -DCMAKE_BUILD_TYPE=Debug -DADBC_BUILD_TESTS=ON -DADBC_DRIVER_NETEZZA=ON && make -j && cp vendor/nanoarrow/libnanoarrow.a ../../$(BUILD_DIR)/libnanoarrow.a && cp driver/common/libadbc_driver_common.a ../../$(BUILD_DIR)/libadbc_driver_common.a
+
+run_cmake_adbc_without_tests: create_build_dir
+	@echo "Running cmake adbc"
+	@[ -d $(ARROW_ADBC_BUILD_DIR) ] || mkdir -p $(ARROW_ADBC_BUILD_DIR)
+	cd $(ARROW_ADBC_BUILD_DIR) && cmake ../c -DCMAKE_BUILD_TYPE=Debug && make -j && cp vendor/nanoarrow/libnanoarrow.a ../../$(BUILD_DIR)/libnanoarrow.a && cp driver/common/libadbc_driver_common.a ../../$(BUILD_DIR)/libadbc_driver_common.a
 
 build_netezza: create_build_dir copy_netezza_driver_lib run_cmake_adbc $(OBJS)
 	@echo "NETEZZA_SOURCE_FILES = $(NETEZZA_SOURCE_FILES)"
