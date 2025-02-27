@@ -127,8 +127,7 @@ class NzGetObjectsHelper {
       }
 
       const char* stmt =
-          "SELECT nspname FROM pg_catalog.pg_namespace WHERE "
-          "nspname !~ '^pg_' AND nspname <> 'information_schema'";
+          "select schema from _v_schema where schema not in ('INFORMATION_SCHEMA','DEFINITION_SCHEMA','ADMIN')";
 
       if (StringBuilderAppend(&query, "%s", stmt)) {
         StringBuilderReset(&query);
@@ -137,7 +136,7 @@ class NzGetObjectsHelper {
 
       std::vector<std::string> params;
       if (db_schema_ != NULL) {
-        if (StringBuilderAppend(&query, "%s", " AND nspname = $1")) {
+        if (StringBuilderAppend(&query, "%s", " AND schema = $1")) {
           StringBuilderReset(&query);
           return ADBC_STATUS_INTERNAL;
         }
@@ -174,13 +173,13 @@ class NzGetObjectsHelper {
     std::memset(&query, 0, sizeof(query));
     if (StringBuilderInit(&query, /*initial_size=*/256) != 0) return ADBC_STATUS_INTERNAL;
 
-    if (StringBuilderAppend(&query, "%s", "SELECT datname FROM pg_catalog.pg_database")) {
+    if (StringBuilderAppend(&query, "%s", "select database from _V_DATABASE")) {
       return ADBC_STATUS_INTERNAL;
     }
 
     std::vector<std::string> params;
     if (catalog_ != NULL) {
-      if (StringBuilderAppend(&query, "%s", " WHERE datname = $1")) {
+      if (StringBuilderAppend(&query, "%s", " WHERE database = $1")) {
         StringBuilderReset(&query);
         return ADBC_STATUS_INTERNAL;
       }
@@ -218,13 +217,14 @@ class NzGetObjectsHelper {
 
     std::vector<std::string> params = {schema_name};
     const char* stmt =
-        "SELECT c.relname, CASE c.relkind WHEN 'r' THEN 'table' WHEN 'v' THEN 'view' "
-        "WHEN 'm' THEN 'materialized view' WHEN 't' THEN 'TOAST table' "
-        "WHEN 'f' THEN 'foreign table' WHEN 'p' THEN 'partitioned table' END "
-        "AS reltype FROM pg_catalog.pg_class c "
-        "LEFT JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace "
-        "WHERE c.relkind IN ('r','v','m','t','f','p') "
-        "AND pg_catalog.pg_table_is_visible(c.oid) AND n.nspname = $1";
+          "SELECT c.relname, case c.relkind WHEN 'r' THEN 'table' WHEN 'v' THEN 'view' "
+           "WHEN 'm' THEN 'materialized view' WHEN 't' THEN 'TOAST table' "
+           "WHEN 'f' THEN 'foreign table' WHEN 'p' THEN 'partitioned table' END "
+           "AS reltype FROM _t_class c "
+           "LEFT JOIN _t_object n ON n.objid=c.oid "
+           "LEFT JOIN _t_schema s ON s.SCHEMAID=n.OBJSCHEMAOID "
+           "WHERE c.relkind IN ('r','v','m','t','f','p') "
+           "AND s.schema LIKE $1";
 
     if (StringBuilderAppend(&query, "%s", stmt)) {
       StringBuilderReset(&query);
@@ -318,13 +318,8 @@ class NzGetObjectsHelper {
 
     std::vector<std::string> params = {schema_name, table_name};
     const char* stmt =
-        "SELECT attr.attname, attr.attnum, "
-        "pg_catalog.col_description(cls.oid, attr.attnum) "
-        "FROM pg_catalog.pg_attribute AS attr "
-        "INNER JOIN pg_catalog.pg_class AS cls ON attr.attrelid = cls.oid "
-        "INNER JOIN pg_catalog.pg_namespace AS nsp ON nsp.oid = cls.relnamespace "
-        "WHERE attr.attnum > 0 AND NOT attr.attisdropped "
-        "AND nsp.nspname LIKE $1 AND cls.relname LIKE $2";
+            "SELECT attname, ATTNUM, description from _v_relation_column "
+            "WHERE attnum > 0  AND schema LIKE $1 and name LIKE $2";
 
     if (StringBuilderAppend(&query, "%s", stmt)) {
       StringBuilderReset(&query);
@@ -332,7 +327,7 @@ class NzGetObjectsHelper {
     }
 
     if (column_name_ != NULL) {
-      if (StringBuilderAppend(&query, "%s", " AND attr.attname LIKE $3")) {
+      if (StringBuilderAppend(&query, "%s", " AND attname LIKE $3")) {
         StringBuilderReset(&query);
         return ADBC_STATUS_INTERNAL;
       }
@@ -650,7 +645,7 @@ AdbcStatusCode NetezzaConnection::NetezzaConnectionGetInfoImpl(
             AdbcConnectionGetInfoAppendString(array, info_codes[i], "Netezza", error));
         break;
       case ADBC_INFO_VENDOR_VERSION: {
-        const char* stmt = "SHOW server_version_num";
+        const char* stmt = "select version()";
         auto result_helper = PqResultHelper{conn_, std::string(stmt), error};
         RAISE_ADBC(result_helper.Prepare());
         RAISE_ADBC(result_helper.Execute());
@@ -1149,12 +1144,12 @@ AdbcStatusCode NetezzaConnection::GetTableSchema(const char* catalog,
   if (StringBuilderInit(&query, /*initial_size=*/256) != 0) return ADBC_STATUS_INTERNAL;
 
   if (StringBuilderAppend(
-          &query, "%s",
-          "SELECT attname, atttypid "
-          "FROM pg_catalog.pg_class AS cls "
-          "INNER JOIN pg_catalog.pg_attribute AS attr ON cls.oid = attr.attrelid "
-          "INNER JOIN pg_catalog.pg_type AS typ ON attr.atttypid = typ.oid "
-          "WHERE attr.attnum >= 0 AND cls.oid = ") != 0)
+    &query, "%s",
+    "SELECT attname, atttypid "
+    "FROM _t_class AS cls "
+    "INNER JOIN _v_relation_column AS attr ON cls.oid = attr.attrelid "
+    "INNER JOIN _t_type AS typ ON attr.ATTTYPID = typ.oid "
+    "WHERE attr.attnum >= 0 AND cls.oid = ") != 0)
     return ADBC_STATUS_INTERNAL;
 
   if (db_schema != nullptr) {
