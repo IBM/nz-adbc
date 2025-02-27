@@ -89,7 +89,7 @@ build_netezza: create_build_dir copy_netezza_driver_lib run_cmake_adbc $(OBJS)
 	@echo "NETEZZA_SOURCE_FILES = $(NETEZZA_SOURCE_FILES)"
 	@echo "OBJS = $(OBJS)"
 	@echo "CPP FLAGS = $(CPPFLAGS)"
-	$(COMPILER_CALL) $(CXXFLAGS) $(LDFLAGS) -o $(BUILD_DIR)/$(ADBC_DRIVER_NETEZZA_LIB) $(OBJS) -lkrb5 -lssl\
+	$(COMPILER_CALL) $(CXXFLAGS) $(LDFLAGS) -o $(BUILD_DIR)/$(ADBC_DRIVER_NETEZZA_LIB) $(OBJS) -lkrb5 -lssl \
 	 $(BUILD_DIR)/libnanoarrow.a $(BUILD_DIR)/libadbc_driver_common.a -L$(BUILD_DIR)/ -Wl,-rpath='$$ORIGIN' -lnzpq
 
 build_nzpyadbc: build_netezza
