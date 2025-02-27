@@ -75,7 +75,7 @@ run_cmake_adbc: create_build_dir
 	@echo "Running cmake adbc"
 	@[ -d $(ARROW_ADBC_BUILD_DIR) ] || mkdir -p $(ARROW_ADBC_BUILD_DIR)
 	cd $(ARROW_ADBC_BUILD_DIR) && cmake ../c -DCMAKE_BUILD_TYPE=Debug -DADBC_BUILD_TESTS=ON -DADBC_DRIVER_NETEZZA=ON && \
-	make -j && cp vendor/nanoarrow/libnanoarrow.a ../../$(BUILD_DIR)/libnanoarrow.a &&\
+	make -j && cp vendor/nanoarrow/libnanoarrow.a ../../$(BUILD_DIR)/libnanoarrow.a && \
 	 cp driver/common/libadbc_driver_common.a ../../$(BUILD_DIR)/libadbc_driver_common.a
 
 run_cmake_adbc_without_tests: create_build_dir
