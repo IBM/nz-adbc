@@ -19,14 +19,19 @@
 DBAPI 2.0-compatible facade for the ADBC libpq driver.
 """
 
-from adbc_driver_manager.dbapi import Cursor, Connection
+from adbc_driver_manager.dbapi import Cursor, Connection, _RowIterator
 
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+
+from pathlib import Path
+
+import tempfile
 
 try:
     import pyarrow
 except ImportError as e:
     raise ImportError("PyArrow is required for the DBAPI-compatible interface") from e
+from pyarrow import csv
 
 try:
     import pyarrow.dataset
@@ -78,7 +83,6 @@ __all__ = [
 # ----------------------------------------------------------
 # Globals
 
-ingest_supported_file_formats = ['csv', 'dat', 'tbl', 'out']
 apilevel = adbc_driver_manager.dbapi.apilevel
 threadsafety = adbc_driver_manager.dbapi.threadsafety
 # XXX: PostgreSQL doesn't fit any of the param styles
@@ -113,29 +117,9 @@ ROWID = adbc_driver_manager.dbapi.ROWID
 
 INGEST_OPTION_TARGET_FILE_PATH: str
 ADBC_NETEZZA_OPTION_FILE_PATH = "adbc.netezza.reader_file_path"
+ADBC_NETEZZA_OPTION_ET_OPTIONS = "adbc.netezza.reader_et_options"
 # ----------------------------------------------------------
 # Functions
-
-def check_support(
-    data: Union[pyarrow.RecordBatch, pyarrow.Table, pyarrow.RecordBatchReader], 
-    reader_file_path: str
-) -> bool:
-    """
-    Checks for support available on Neteza. Currently supporting ingestion of 
-    structured table data.
-
-    Parameters
-    ----------
-    data
-        The Arrow data to for the file to insert . 
-        This can be a pyarrow RecordBatch, Table or RecordBatchReader, or any Arrow-compatible data that implements
-        the Arrow PyCapsule Protocol (i.e. has an ``__arrow_c_array__``
-        or ``__arrow_c_stream__`` method).
-    reader_file_path
-        Netezza specific parameter for adbc_ingest to provide the path
-        of the file tryng to ingest
-    """
-    return isinstance(data, pyarrow.Table) and reader_file_path.split('.')[1] in ingest_supported_file_formats
 
 def connect(
     uri: str,
@@ -180,6 +164,42 @@ class NetezzaConnection(Connection):
         return NetezzaCursor(self)
 
 class NetezzaCursor(Cursor):
+    def __init__(self, conn: NetezzaConnection):
+        # Must be at top in case __init__ is interrupted and then __del__ is called
+        self._closed = True
+        self._conn = conn
+        self._stmt = _lib.AdbcStatement(conn._conn)
+        self._closed = False
+
+        self._last_query: Optional[Union[str, bytes]] = None
+        self._results: Optional["_RowIterator"] = None
+        self._arraysize = 1
+        self._rowcount = -1
+        self.ingest_supported_file_formats = ['csv', 'dat', 'tbl', 'out']
+        self.is_temp_dir_created = False
+
+    def check_support(
+            self,
+            data: Union[pyarrow.RecordBatch, pyarrow.Table, pyarrow.RecordBatchReader], 
+            reader_file_path: str
+        ) -> bool:
+        """
+        Checks for support available on Neteza. Currently supporting ingestion of 
+        structured table data.
+
+        Parameters
+        ----------
+        data
+            The Arrow data to for the file to insert . 
+            This can be a pyarrow RecordBatch, Table or RecordBatchReader, or any Arrow-compatible data that implements
+            the Arrow PyCapsule Protocol (i.e. has an ``__arrow_c_array__``
+            or ``__arrow_c_stream__`` method).
+        reader_file_path
+            Netezza specific parameter for adbc_ingest to provide the path
+            of the file tryng to ingest
+        """
+        return isinstance(data, pyarrow.Table) and reader_file_path.split('.')[1] in self.ingest_supported_file_formats
+
     def adbc_ingest(
         self,
         table_name: str,
@@ -189,7 +209,8 @@ class NetezzaCursor(Cursor):
         catalog_name: Optional[str] = None,
         db_schema_name: Optional[str] = None,
         temporary: bool = False,
-        reader_file_path: str = None
+        reader_file_path: str = None,
+        reader_et_options: dict = {}
     ) -> int:
         """Ingest CSV data into a database table.
 
@@ -227,6 +248,12 @@ class NetezzaCursor(Cursor):
             Netezza specific parameter for adbc_ingest to provide the path
             of the file tryng to ingest
             **This API is EXPERIMENTAL.**
+        reader_et_options
+            Netezza specific parameter which can be used to specify the parameters
+            for etxernal table parameters as a dictionary
+            The options can be discovered from :
+            https://www.ibm.com/docs/en/netezza?topic=eto-option-summary
+            **This API is EXPERIMENTAL.**
 
         Returns
         -------
@@ -239,7 +266,20 @@ class NetezzaCursor(Cursor):
         This is an extension and not part of the DBAPI standard.
 
         """
-        if not check_support(data, reader_file_path):
+        # Check if pyarrow table instance is provided, if yes then create a temp path
+        # and set default reader_et_options
+        if isinstance(data, pyarrow.Table) and reader_file_path is None:
+            tempdir = tempfile.TemporaryDirectory(
+                prefix="adbc-docs-",
+                ignore_cleanup_errors=True,
+            )
+            root = Path(tempdir.name)
+            reader_file_path = str(root / "example.csv")
+            csv.write_csv(data, reader_file_path)
+            if reader_et_options == {}:
+                reader_et_options = {"delim" : "','", "MaxErrors":0, "SkipRows":1}
+            self.is_temp_dir_created = True
+        if not self.check_support(data, reader_file_path):
             raise ValueError("Not supported on Netezza yet..")
         if mode == "append":
             c_mode = _lib.INGEST_OPTION_MODE_APPEND
@@ -252,10 +292,13 @@ class NetezzaCursor(Cursor):
         else:
             raise ValueError(f"Invalid value for 'mode': {mode}")
 
+        reader_et_options = " ".join([f"{key} {reader_et_options[key]}" for key in reader_et_options])
+
         options = {
             _lib.INGEST_OPTION_TARGET_TABLE: table_name,
             _lib.INGEST_OPTION_MODE: c_mode,
-            "adbc.netezza.reader_file_path" : reader_file_path
+            ADBC_NETEZZA_OPTION_FILE_PATH : reader_file_path,
+            ADBC_NETEZZA_OPTION_ET_OPTIONS : reader_et_options
         }
         if catalog_name is not None:
             options[
@@ -308,7 +351,10 @@ class NetezzaCursor(Cursor):
             self._stmt.bind_stream(handle)
 
         self._last_query = None
-        return _blocking_call(self._stmt.execute_update, (), {}, self._stmt.cancel)
+        result = _blocking_call(self._stmt.execute_update, (), {}, self._stmt.cancel)
+        if self.is_temp_dir_created:
+            tempdir.cleanup()
+        return result
 
 Connection = NetezzaConnection
 Cursor = NetezzaCursor

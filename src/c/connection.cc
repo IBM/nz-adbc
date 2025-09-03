@@ -642,7 +642,6 @@ AdbcStatusCode NetezzaConnection::NetezzaConnectionGetInfoImpl(
     struct ArrowArray* array, struct AdbcError* error) {
   RAISE_ADBC(AdbcInitConnectionGetInfoSchema(schema, array,
                                              error));
-
   for (size_t i = 0; i < info_codes_length; i++) {
     switch (info_codes[i]) {
       case ADBC_INFO_VENDOR_NAME:
@@ -650,7 +649,7 @@ AdbcStatusCode NetezzaConnection::NetezzaConnectionGetInfoImpl(
             AdbcConnectionGetInfoAppendString(array, info_codes[i], "Netezza", error));
         break;
       case ADBC_INFO_VENDOR_VERSION: {
-        const char* stmt = "SHOW server_version_num";
+        const char* stmt = "select version()";
         auto result_helper = PqResultHelper{conn_, std::string(stmt), error};
         RAISE_ADBC(result_helper.Prepare());
         RAISE_ADBC(result_helper.Execute());
@@ -1147,7 +1146,7 @@ AdbcStatusCode NetezzaConnection::GetTableSchema(const char* catalog,
   std::memset(&query, 0, sizeof(query));
   std::vector<std::string> params;
   if (StringBuilderInit(&query, /*initial_size=*/256) != 0) return ADBC_STATUS_INTERNAL;
-
+  
   if (StringBuilderAppend(
           &query, "%s",
           "SELECT attname, atttypid "
@@ -1168,7 +1167,7 @@ AdbcStatusCode NetezzaConnection::GetTableSchema(const char* catalog,
   if (StringBuilderAppend(&query, "%s%" PRIu64 "%s", "$",
                           static_cast<uint64_t>(params.size() + 1), "::regclass::oid")) {
     StringBuilderReset(&query);
-    return ADBC_STATUS_INTERNAL;
+  return ADBC_STATUS_INTERNAL;
   }
   params.push_back(table_name);
 
