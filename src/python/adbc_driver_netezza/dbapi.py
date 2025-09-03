@@ -31,6 +31,7 @@ try:
     import pyarrow
 except ImportError as e:
     raise ImportError("PyArrow is required for the DBAPI-compatible interface") from e
+from pyarrow import csv
 
 try:
     import pyarrow.dataset
@@ -274,8 +275,9 @@ class NetezzaCursor(Cursor):
             )
             root = Path(tempdir.name)
             reader_file_path = str(root / "example.csv")
-            pyarrow.csv.write_csv(data, reader_file_path)
-            reader_et_options = {"delim" : "','", "MaxErrors":0, "SkipRows":1}
+            csv.write_csv(data, reader_file_path)
+            if reader_et_options == {}:
+                reader_et_options = {"delim" : "','", "MaxErrors":0, "SkipRows":1}
             self.is_temp_dir_created = True
         if not self.check_support(data, reader_file_path):
             raise ValueError("Not supported on Netezza yet..")

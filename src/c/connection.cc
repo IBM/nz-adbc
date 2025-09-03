@@ -642,7 +642,7 @@ AdbcStatusCode NetezzaConnection::NetezzaConnectionGetInfoImpl(
     struct ArrowArray* array, struct AdbcError* error) {
   RAISE_ADBC(AdbcInitConnectionGetInfoSchema(schema, array,
                                              error));
-
+  // Ayush Fix here
   for (size_t i = 0; i < info_codes_length; i++) {
     switch (info_codes[i]) {
       case ADBC_INFO_VENDOR_NAME:
@@ -1338,6 +1338,7 @@ AdbcStatusCode NetezzaConnection::SetOption(const char* key, const char* value,
     return ADBC_STATUS_OK;
   } else if (std::strcmp(key, ADBC_CONNECTION_OPTION_CURRENT_DB_SCHEMA) == 0) {
     // Netezza doesn't accept a parameter here
+    // Ayush Fix here
     PqResultHelper result_helper{
         conn_, std::string("SET search_path TO ") + value, {}, error};
     RAISE_ADBC(result_helper.Prepare());
