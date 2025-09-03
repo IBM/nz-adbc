@@ -42,7 +42,7 @@ def test_conn_current_db_schema(netezza: dbapi.Connection) -> None:
     assert netezza.adbc_current_db_schema == "ADMIN"
 
 
-@pytest.mark.skip(reason="Not relevant for netezza")
+@pytest.mark.skip(reason="Not implemented on netezza")
 def test_conn_change_db_schema(netezza: dbapi.Connection) -> None:
     assert netezza.adbc_current_db_schema == "ADMIN"
 
@@ -53,7 +53,6 @@ def test_conn_change_db_schema(netezza: dbapi.Connection) -> None:
     netezza.adbc_current_db_schema = "dbapischema"
     assert netezza.adbc_current_db_schema == "dbapischema"
 
-@pytest.mark.skip(reason="Not relevant for netezza")
 def test_conn_get_info(netezza: dbapi.Connection) -> None:
     info = netezza.adbc_get_info()
     assert info["driver_name"] == "ADBC Netezza Driver"
@@ -98,7 +97,7 @@ def test_query_batch_size(netezza: dbapi.Connection):
         assert len(table.to_batches()) >= 1
 
 
-@pytest.mark.skip(reason="Not relevant for netezza")
+@pytest.mark.skip(reason="Not implemented on netezza")
 def test_query_cancel(netezza: dbapi.Connection) -> None:
     with netezza.cursor() as cur:
         int_array = pa.array(range(0, 1048576), type=pa.int32())
