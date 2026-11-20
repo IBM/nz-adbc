@@ -154,14 +154,6 @@ AdbcStatusCode NetezzaDatabase::Connect(PGconn** conn, struct AdbcError* error) 
   + " bnr_connect=adbc";
 
   *conn = PQconnectdb(converted_uri.c_str());
-
-  /*
-  * Enable debug trace to libpq. So that we know what's going to the backend and
-  * what's coming back.
-  */
-  FILE* logfile;
-  logfile = fopen("/tmp/adbc_libpq.log", "a+");
-  PQtrace(*conn, logfile);
   
   if (PQstatus(*conn) != CONNECTION_OK) {
     SetError(error, "%s%s", "[libpq] Failed to connect: ", PQerrorMessage(*conn));
